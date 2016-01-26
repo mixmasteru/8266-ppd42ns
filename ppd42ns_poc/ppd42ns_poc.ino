@@ -1,44 +1,96 @@
 /*
-G rove - Dust Sensor Demo v1.0
- Interface to Shinyei Model PPD42NS Particle Sensor
- Program by Christopher Nafis 
- Written April 2012
- 
- http://www.seeedstudio.com/depot/grove-dust-sensor-p-1050.html
- http://www.sca-shinyei.com/pdf/PPD42NS.pdf
- 
- JST Pin 1 (Black Wire)  =&gt; //Arduino GND
- JST Pin 3 (Red wire)    =&gt; //Arduino 5VDC
- JST Pin 4 (Yellow wire) =&gt; //Arduino Digital Pin 8
- */
- 
-int pin = 8;
-unsigned long duration;
+ Shinyei PPD42NS Particle Sensor
+
+ using nodemcu-LoLin board
+
+ specification: http://www.sca-shinyei.com/pdf/PPD42NS.pdf
+
+ pin 1 (grey)  -> GND
+ pin 3 (black) -> Vin
+ pin 2 (green) -> Pin D5 / GPIO14
+ pin 4 (white) -> Pin D6 / GPIO12
+ pin 5 (red)   -> unused!
+
+*/
+
+boolean valP1 = HIGH;
+boolean valP2 = HIGH;
+
 unsigned long starttime;
-unsigned long sampletime_ms = 2000;//sampe 30s&nbsp;;
-unsigned long lowpulseoccupancy = 0;
-float ratio = 0;
-float concentration = 0;
- 
+unsigned long durationP1;
+unsigned long durationP2;
+
+boolean trigP1 = false;
+boolean trigP2 = false;
+unsigned long trigOnP1;
+unsigned long trigOnP2;
+
+unsigned long sampletime_ms = 10000;
+unsigned long lowpulseoccupancyP1 = 0;
+unsigned long lowpulseoccupancyP2 = 0;
+
 void setup() {
   Serial.begin(9600);
-  pinMode(8,INPUT);
-  starttime = millis();//get the current time;
+  Serial.println("start PPD42NS");
+  pinMode(5,INPUT);
+  pinMode(6,INPUT);
+  starttime = millis();
 }
- 
+
 void loop() {
-  duration = pulseIn(pin, LOW);
-  lowpulseoccupancy = lowpulseoccupancy+duration;
- 
-  if ((millis()-starttime) >= sampletime_ms)//if the sampel time = = 30s
+  float ratio = 0;
+  float concentration = 0;
+
+  valP1 = digitalRead(5);
+  valP2 = digitalRead(6);
+
+  if(valP1 == LOW && trigP1 == false){
+    trigP1 = true;
+    trigOnP1 = micros();
+  }
+  
+  if (valP1 == HIGH && trigP1 == true){
+    durationP1 = micros() - trigOnP1;
+    lowpulseoccupancyP1 = lowpulseoccupancyP1 + durationP1;
+    trigP1 = false;
+  }
+  
+  if(valP2 == LOW && trigP2 == false){
+    trigP2 = true;
+    trigOnP2 = micros();
+  }
+  
+  if (valP2 == HIGH && trigP2 == true){
+    durationP2 = micros() - trigOnP2;
+    lowpulseoccupancyP2 = lowpulseoccupancyP2 + durationP2;
+    trigP2 = false;
+  }
+
+  if ((millis()-starttime) > sampletime_ms)
   {
-    ratio = lowpulseoccupancy/(sampletime_ms*10.0);  // Integer percentage 0=&gt;100
-    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
-    Serial.print("concentration = ");
-    Serial.print(concentration);
-    Serial.println(" pcs/0.01cf");
-    Serial.println("\n");
-    lowpulseoccupancy = 0;
+    ratio = lowpulseoccupancyP1/(sampletime_ms*10.0);                 // int percentage 0 to 100
+    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // spec sheet curve
+    Serial.print("lowpulseoccupancyP1:");
+    Serial.print(lowpulseoccupancyP1);
+    Serial.print(";ratioP1:");
+    Serial.print(ratio);
+    Serial.print(";countP1:");
+    Serial.println(concentration);
+
+    ratio = lowpulseoccupancyP2/(sampletime_ms*10.0);
+    concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62;
+
+    Serial.print("lowpulseoccupancyP2:");
+    Serial.print(lowpulseoccupancyP2);
+    Serial.print(";ratioP2:");
+    Serial.print(ratio);
+    Serial.print(";countP2:");
+    Serial.println(concentration);
+
+    lowpulseoccupancyP1 = 0;
+    lowpulseoccupancyP2 = 0;
     starttime = millis();
   }
 }
+
+
