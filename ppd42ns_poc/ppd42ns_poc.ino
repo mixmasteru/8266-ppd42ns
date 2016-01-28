@@ -13,6 +13,9 @@
 
 */
 
+int pin1 = 5;
+int pin2 = 6;
+
 boolean valP1 = HIGH;
 boolean valP2 = HIGH;
 
@@ -25,15 +28,15 @@ boolean trigP2 = false;
 unsigned long trigOnP1;
 unsigned long trigOnP2;
 
-unsigned long sampletime_ms = 10000;
+unsigned long sampletime_ms = 15000;
 unsigned long lowpulseoccupancyP1 = 0;
 unsigned long lowpulseoccupancyP2 = 0;
 
 void setup() {
   Serial.begin(9600);
   Serial.println("start PPD42NS");
-  pinMode(5,INPUT);
-  pinMode(6,INPUT);
+  pinMode(pin1,INPUT);
+  pinMode(pin2,INPUT);
   starttime = millis();
 }
 
@@ -41,8 +44,8 @@ void loop() {
   float ratio = 0;
   float concentration = 0;
 
-  valP1 = digitalRead(5);
-  valP2 = digitalRead(6);
+  valP1 = digitalRead(pin1);
+  valP2 = digitalRead(pin2);
 
   if(valP1 == LOW && trigP1 == false){
     trigP1 = true;
@@ -72,9 +75,9 @@ void loop() {
     concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // spec sheet curve
     Serial.print("lowpulseoccupancyP1:");
     Serial.print(lowpulseoccupancyP1);
-    Serial.print(";ratioP1:");
+    Serial.print(" ratioP1:");
     Serial.print(ratio);
-    Serial.print(";countP1:");
+    Serial.print(" countP1:");
     Serial.println(concentration);
 
     ratio = lowpulseoccupancyP2/(sampletime_ms*10.0);
@@ -82,9 +85,9 @@ void loop() {
 
     Serial.print("lowpulseoccupancyP2:");
     Serial.print(lowpulseoccupancyP2);
-    Serial.print(";ratioP2:");
+    Serial.print(" ratioP2:");
     Serial.print(ratio);
-    Serial.print(";countP2:");
+    Serial.print(" countP2:");
     Serial.println(concentration);
 
     lowpulseoccupancyP1 = 0;
