@@ -13,11 +13,17 @@
 
 #include "Arduino.h"
 #include <SPI.h>
+#include "DHT.h"
+
+#define DHTTYPE DHT22
+#define DHTPIN 4
 
 #define CHILD_ID_DUST_PM10            0
 #define CHILD_ID_DUST_PM25            1
 #define DUST_SENSOR_DIGITAL_PIN_PM10  D1
 #define DUST_SENSOR_DIGITAL_PIN_PM25  D2
+
+DHT dht(DHTPIN, DHTTYPE);
 
 unsigned long SLEEP_TIME = 30*1000; // Sleep time between reads (in milliseconds)
 //VARIABLES
@@ -34,7 +40,7 @@ unsigned long lowpulseoccupancy = 0;
 float ratio = 0;
 long concentrationPM25 = 0;
 long concentrationPM10 = 0;
-int temp=20; //external temperature, if you can replace this with a DHT11 or better
+//int temp=20; //external temperature, if you can replace this with a DHT11 or better
 long ppmv;
 
 long getPM(int DUST_SENSOR_DIGITAL_PIN) {
@@ -76,7 +82,7 @@ void setup()
 
 void loop()
 {
-
+  int temp = (int)dht.readTemperature();
   //get PM 2.5 density of particles over 2.5 μm.
   concentrationPM25=getPM(DUST_SENSOR_DIGITAL_PIN_PM25);
   Serial.print("PM25: ");
