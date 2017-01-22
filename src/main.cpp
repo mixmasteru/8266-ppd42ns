@@ -24,41 +24,32 @@
 #define DUST_SENSOR_DIGITAL_PIN_PM25  D2
 
 DHT dht(DHTPIN, DHTTYPE);
-
-unsigned long SLEEP_TIME = 30*1000; // Sleep time between reads (in milliseconds)
-//VARIABLES
-int val = 0;           // variable to store the value coming from the sensor
-float valDUSTPM25 =0.0;
-float lastDUSTPM25 =0.0;
-float valDUSTPM10 =0.0;
-float lastDUSTPM10 =0.0;
-unsigned long duration;
-unsigned long starttime;
-unsigned long endtime;
 unsigned long sampletime_ms = 30000;
-unsigned long lowpulseoccupancy = 0;
-float ratio = 0;
 long concentrationPM25 = 0;
 long concentrationPM10 = 0;
-//int temp=20; //external temperature, if you can replace this with a DHT11 or better
-long ppmv;
 
-long getPM(int DUST_SENSOR_DIGITAL_PIN) {
-  starttime = millis();
+long getPM(int pin)
+{
+  unsigned long duration = 0;
+  unsigned long lowpulseoccupancy = 0;
+  unsigned long starttime = millis();
+  unsigned long endtime;
+  long concentration = 0;
+  float ratio = 0;
 
   while (1) {
-
-	  duration = pulseIn(DUST_SENSOR_DIGITAL_PIN, LOW);
+	  duration = pulseIn(pin, LOW);
 	  lowpulseoccupancy += duration;
 	  endtime = millis();
 
 	  if ((endtime-starttime) > sampletime_ms)
 	  {
-  		ratio = (lowpulseoccupancy-endtime+starttime)/(sampletime_ms*10.0);  // Integer percentage 0=>100
-      long concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
-  		lowpulseoccupancy = 0;
-  		return(concentration);
-	  }
+      Serial.print("lowpulseoccupancy: ");
+      Serial.println(lowpulseoccupancy);
+      ratio = (lowpulseoccupancy-endtime+starttime)/(sampletime_ms*10.0);  // Integer percentage 0=>100
+      concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
+      return concentration;
+    }
   }
 }
 
@@ -66,9 +57,18 @@ void setup()
 {
   pinMode(DUST_SENSOR_DIGITAL_PIN_PM10,INPUT);
   pinMode(DUST_SENSOR_DIGITAL_PIN_PM25,INPUT);
-  delay(5000);
+  delay(1000);
   Serial.begin(115200);
   Serial.println("start");
+}
+
+float calcPPMV(long concentration, float temp)
+{
+  //ppmv=mg/m3 * (0.08205*Tmp)/Molecular_mass
+  //0.08205   = Universal gas constant in atm·m3/(kmol·K)
+  float ppmv = (concentration*0.0283168/100/1000) *  (0.08205*temp)/0.01;
+  ppmv*=1000;//to µg/m³
+  return ppmv;
 }
 
 void loop()
@@ -79,31 +79,20 @@ void loop()
   Serial.println(temp);
   Serial.print("hume: ");
   Serial.println(hume);
+
   //get PM 2.5 density of particles over 2.5 μm.
-  concentrationPM25=getPM(DUST_SENSOR_DIGITAL_PIN_PM25);
+  concentrationPM25 = getPM(DUST_SENSOR_DIGITAL_PIN_PM25);
+  float ppmv = calcPPMV(concentrationPM25,temp);
   Serial.print("PM25: ");
   Serial.println(concentrationPM25);
-  //ppmv=mg/m3 * (0.08205*Tmp)/Molecular_mass
-  //0.08205   = Universal gas constant in atm·m3/(kmol·K)
-  ppmv=(concentrationPM25*0.0283168/100/1000) *  (0.08205*temp)/0.01;
-
-  if ((ceil(concentrationPM25) != lastDUSTPM25)&&((long)concentrationPM25>0)) {
-      lastDUSTPM25 = ceil(concentrationPM25);
-  }
-
-  delay(5000);
+  Serial.println(ppmv);
 
   //get PM 1.0 - density of particles over 1 μm.
-  concentrationPM10=getPM(DUST_SENSOR_DIGITAL_PIN_PM10);
+  concentrationPM10 = getPM(DUST_SENSOR_DIGITAL_PIN_PM10);
+  ppmv= calcPPMV(concentrationPM10,temp);
   Serial.print("PM10: ");
   Serial.println(concentrationPM10);
+  Serial.println(ppmv);
   Serial.print("\n");
 
-  //ppmv=mg/m3 * (0.08205*Tmp)/Molecular_mass
-  //0.08205   = Universal gas constant in atm·m3/(kmol·K)
-  ppmv=(concentrationPM10*0.0283168/100/1000) *  (0.08205*temp)/0.01;
-
-  if ((ceil(concentrationPM10) != lastDUSTPM10)&&((long)concentrationPM10>0)) {
-      lastDUSTPM10 = ceil(concentrationPM10);
-  }
 }
