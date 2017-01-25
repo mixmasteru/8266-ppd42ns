@@ -17,9 +17,7 @@ TODO:
 ## Shinyei PPD42NS
 
 from the data sheet:
-This sensor is to create Digital (Lo Pulse) output to Particulate Matters(PM). Lo Pulse Occupancy time (LPO
-time) is in proportion to PM concentration. The output from “P1” is for PM whose size is around 1 micro meter
-or larger.
+This sensor is to create Digital (Lo Pulse) output to Particulate Matters(PM). Lo Pulse Occupancy time (LPO time) is in proportion to PM concentration. The output from “P1” is for PM whose size is around 1 micro meter or larger.
 
 | Model | PPD 42NS |
 |---|---|
