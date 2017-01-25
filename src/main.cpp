@@ -2,13 +2,16 @@
  * ESP8266 Arduino Dust Sensor for Shinyei PPD42NS
  * connect the sensor as follows :
  * pin 1 (green)  -> GND
+ * pin 2 (white)  -> P2 Pin D1
  * pin 3 (yellow) -> Vin 5V
- * pin 2 (white) -> Pin D1
- * pin 4 (black) -> Pin D2
- * pin 5 (red)   -> unused!
+ * pin 4 (black)  -> P1 Pin D2
+ * pin 5 (red)    -> unused! (may be used as threshold for P2)
+ *
+ * DHT22
  *
  * Based on: https://github.com/empierre/arduino/blob/master/DustSensor_Shinyei_PPD42NS.ino
  * Datasheet:  https://yadom.fr/downloadable/download/sample/sample_id/41/
+ * good infos: https://indiaairquality.com/
 */
 
 #include "Arduino.h"
@@ -30,23 +33,25 @@ long concentrationPM10 = 0;
 
 long getPM(int pin)
 {
-  unsigned long duration = 0;
   unsigned long lowpulseoccupancy = 0;
   unsigned long starttime = millis();
   unsigned long endtime;
   long concentration = 0;
   float ratio = 0;
 
-  while (1) {
-	  duration = pulseIn(pin, LOW);
-	  lowpulseoccupancy += duration;
+  while (true) {
+    //lowpulseoccupancy represents the Lo Pulse Occupancy Time(LPO Time)
+    lowpulseoccupancy += pulseIn(pin, LOW);
 	  endtime = millis();
 
 	  if ((endtime-starttime) > sampletime_ms)
 	  {
       Serial.print("lowpulseoccupancy: ");
       Serial.println(lowpulseoccupancy);
-      ratio = (lowpulseoccupancy-endtime+starttime)/(sampletime_ms*10.0);  // Integer percentage 0=>100
+      //ratio reflects on which level LPO Time takes up the whole sample time
+      //ratio = (lowpulseoccupancy-endtime+starttime)/(sampletime_ms*10.0);  // Integer percentage 0=>100
+      ratio = lowpulseoccupancy/((endtime-starttime)*10.0);  // Integer percentage 0=>100
+      //concentration is a figure that has physical meaning. It's calculated from the characteristic graph below by using the LPO time.
       concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
       return concentration;
     }
